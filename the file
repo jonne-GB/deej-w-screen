@@ -1,0 +1,74 @@
+#include <Wire.h> // Include the I2C library
+#include <Adafruit_GFX.h> // Include Adafruit's graphics library
+#include <Adafruit_SSD1306.h> // Include the SSD1306 OLED library
+
+#define SCREEN_WIDTH 128 // Define the width of the OLED
+#define SCREEN_HEIGHT 64 // Define the height of the OLED
+
+// Create an instance of the OLED display
+Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, -1); // -1 indicates no reset pin
+
+const int NUM_SLIDERS = 5;
+const int analogInputs[NUM_SLIDERS] = {A0, A1, A2, A3, A4};
+
+int analogSliderValues[NUM_SLIDERS];
+
+void setup() { 
+  for (int i = 0; i < NUM_SLIDERS; i++) {
+    pinMode(analogInputs[i], INPUT);
+  }
+
+  Serial.begin(9600);
+
+  // Initialize the OLED display
+  display.begin(SSD1306_I2C_ADDRESS, 0x3C); // Use the correct I2C address (usually 0x3C)
+  display.clearDisplay(); // Clear the display buffer
+  display.setTextSize(1); // Set text size (1 = small)
+  display.setTextColor(SSD1306_WHITE); // Set text color
+}
+
+void loop() {
+  updateSliderValues();
+  sendSliderValues(); // Send data to Serial
+  displaySliderValues(); // Display values on OLED
+  delay(500); // Delay for half a second to reduce flicker
+}
+
+void updateSliderValues() {
+  for (int i = 0; i < NUM_SLIDERS; i++) {
+     analogSliderValues[i] = analogRead(analogInputs[i]);
+  }
+}
+
+void sendSliderValues() {
+  String builtString = String("");
+
+  for (int i = 0; i < NUM_SLIDERS; i++) {
+    builtString += String((int)analogSliderValues[i]);
+
+    if (i < NUM_SLIDERS - 1) {
+      builtString += String("|");
+    }
+  }
+  
+  Serial.println(builtString);
+}
+
+void displaySliderValues() {
+  display.clearDisplay(); // Clear the OLED display
+  display.setCursor(0, 0); // Set the cursor to the top-left corner
+
+  // Display the slider values on the OLED
+  for (int i = 0; i < NUM_SLIDERS; i++) {
+    display.print("S");
+    display.print(i + 1);
+    display.print(": ");
+    display.print(analogSliderValues[i]);
+    display.print("  "); // Extra spaces to clear previous numbers
+    if (i < NUM_SLIDERS - 1) {
+      display.print("| "); // Separator between sliders
+    }
+  }
+
+  display.display(); // Update the display with the new content
+}
